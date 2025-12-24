@@ -118,6 +118,7 @@ export default function Split() {
               {/* Pay Button */}
               <button 
                 disabled={selectedCount === 0}
+                 onClick={() => navigate('/settle')}
                 className="col-span-3 py-4 bg-brand text-background text-lg font-bold rounded-cheq disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#99E3D6] active:scale-[0.98] transition-all flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(128,216,200,0.3)]"
               >
                 Pay Now

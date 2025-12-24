@@ -3,6 +3,7 @@ import { AnimatePresence } from 'framer-motion';
 import Home from './pages/Home';
 import ManualEntry from './pages/ManualEntry';
 import Split from './pages/Split';
+import Settlement from './pages/Settlement';
 
 // We need a separate component for the Routes so we can use the 'useLocation' hook
 const AnimatedRoutes = () => {
@@ -14,6 +15,7 @@ const AnimatedRoutes = () => {
         <Route path="/" element={<Home />} />
         <Route path="/manual" element={<ManualEntry />} />
         <Route path="/split" element={<Split />} />
+        <Route path="/settle" element={<Settlement />} />
       </Routes>
     </AnimatePresence>
   );
