@@ -1,4 +1,4 @@
-import { Camera, Zap, Share2, Receipt } from 'lucide-react';
+import { Camera, Zap, Share2, Receipt, Keyboard } from 'lucide-react';
 
 function App() {
   return (
@@ -40,7 +40,7 @@ function App() {
               </div>
             </div>
           </div>
-          
+
           <div className="text-center z-10 mb-8">
             <h1 className="text-6xl font-bold tracking-tighter leading-[0.9]">
               <span className="block text-brand drop-shadow-[0_0_15px_rgba(128,216,200,0.3)]">Scan.</span>
@@ -50,7 +50,7 @@ function App() {
           </div>
 
           <p className="text-center text-lg text-gray-400 font-body max-w-[260px] mx-auto leading-relaxed">
-            The exit strategy for your group dinner.
+            The easy way to split any check
           </p>
 
           {/* Value Props Grid */}
@@ -73,6 +73,11 @@ function App() {
           <button className="w-full py-4 bg-brand text-background text-lg font-bold rounded-cheq shadow-[0_0_20px_rgba(128,216,200,0.4)] hover:bg-[#99E3D6] hover:shadow-[0_0_30px_rgba(128,216,200,0.6)] active:scale-[0.98] transition-all flex items-center justify-center gap-2 group">
             <Camera className="w-5 h-5 group-hover:rotate-12 transition-transform" />
             Start Scanning
+          </button>
+
+          <button className="w-full mt-3 py-3 text-sm font-medium text-gray-400 hover:text-white hover:bg-surface/50 rounded-cheq transition-all flex items-center justify-center gap-2">
+            <Keyboard className="w-4 h-4" />
+            Or split check manually
           </button>
         </div>
 
