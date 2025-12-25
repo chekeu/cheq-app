@@ -1,13 +1,35 @@
 import { ArrowLeft, Share, RefreshCw, Edit3, CheckSquare, Pencil } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-import { useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { useEffect, useState } from 'react';
 import { PageTransition } from '../components/PageTransition';
 import { useBillStore } from '../store/useBillStore';
 
 export default function HostDashboard() {
   const navigate = useNavigate();
-  const { items, taxRate, tipRate } = useBillStore();
+  const { id } = useParams<{ id: string }>(); // Get ID from URL
+  
+  // Destructure new stuff from store
+  const { items, taxRate, tipRate, loadBill, isLoading } = useBillStore();
+  
   const [copied, setCopied] = useState(false);
+
+  // 1. HYDRATION LOGIC
+  useEffect(() => {
+    // If we have an ID, and the store is empty (or we just want to ensure we're synced)
+    // let's fetch.
+    if (id && items.length === 0) {
+      loadBill(id);
+    }
+  }, [id, items.length, loadBill]);
+
+  // 2. LOADING STATE
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-brand animate-pulse font-bold tracking-widest">LOADING...</div>
+      </div>
+    );
+  }
 
   // Math Logic
   const billSubtotal = items.reduce((sum, item) => sum + item.price, 0);
@@ -20,15 +42,22 @@ export default function HostDashboard() {
   const recoverAmount = billTotal - myTotal;
 
   const handleShare = () => {
-    const link = `https://cheq.app/bill/demo-123`;
+    // 1. DYNAMIC LINK GENERATION
+    // We grab the current domain (e.g. localhost:5173 or cheq.app)
+    const baseUrl = window.location.origin;
+    
+    // We construct the GUEST route (/bill/), not the Host route (/host/)
+    const guestLink = `${baseUrl}/bill/${id}`;
+    
+    // 2. SHARE LOGIC
     if (navigator.share) {
       navigator.share({
         title: 'Split the bill',
         text: `Total is $${billTotal.toFixed(2)}. Tap to pay your share.`,
-        url: link,
+        url: guestLink, // Send the Guest Link
       }).catch(console.error);
     } else {
-      navigator.clipboard.writeText(link);
+      navigator.clipboard.writeText(guestLink); // Copy the Guest Link
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     }
@@ -56,7 +85,7 @@ export default function HostDashboard() {
           <main className="flex-1 p-6 pb-32 overflow-y-auto">
             <h1 className="text-xl font-bold tracking-tight">Final Billing</h1>
 
-            {/* 1. STATUS CARD */}
+            {/* Bill Details */}
             <div className="bg-surface rounded-cheq p-6 mb-4 border border-brand/20 relative overflow-hidden">
             <div className="absolute -right-10 -top-10 w-32 h-32 bg-brand/10 blur-[50px] rounded-full pointer-events-none" />
 
@@ -92,7 +121,7 @@ export default function HostDashboard() {
             </div>
             </div>
 
-            {/* 2. QUICK ACTIONS (EDITING) */}
+            {/* Edit Bill Actions for Host */}
             <div className="grid grid-cols-2 gap-3 mb-8">
               <button 
                 onClick={() => navigate('/manual')}
@@ -110,7 +139,7 @@ export default function HostDashboard() {
               </button>
             </div>
 
-            {/* 3. ACTIVITY FEED */}
+            {/* Guest List for Bill */}
             <div className="mb-6">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-sm font-bold text-gray-500 uppercase tracking-widest">Live Updates</h3>
@@ -125,7 +154,7 @@ export default function HostDashboard() {
               </div>
             </div>
 
-            {/* 4. SHARE ACTION */}
+            {/* Share - Call to Action */}
             <div className="space-y-3">
               <label className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-1 block">
                 Action

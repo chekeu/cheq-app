@@ -1,19 +1,34 @@
-import { ArrowLeft, Copy, CheckCircle2, Banknote, Building2 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { ArrowLeft, Copy, CheckCircle2, Banknote } from 'lucide-react';
 import { PageTransition } from '../components/PageTransition';
 import { useBillStore } from '../store/useBillStore';
 
 const VenmoIcon = () => <span className="font-bold tracking-tighter italic mr-1">V</span>;
 
 export default function GuestSettlement() {
+  const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { items, taxRate, tipRate } = useBillStore();
+  const { items, taxRate, tipRate, hostVenmo, hostCashApp, hostZelle, loadBill, isLoading } = useBillStore();
   
   const [copied, setCopied] = useState(false);
-  const [hostHandle, setHostHandle] = useState(''); 
 
-  // Guest Math
+  // Hydrate on load
+  useEffect(() => {
+    if (id && items.length === 0) {
+      loadBill(id);
+    }
+  }, [id, items.length, loadBill]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-brand animate-pulse font-bold tracking-widest">LOADING...</div>
+      </div>
+    );
+  }
+
+  // Math
   const selectedItems = items.filter(i => i.isSelected);
   const subtotal = selectedItems.reduce((sum, item) => sum + item.price, 0);
   const taxAmount = subtotal * taxRate;
@@ -22,16 +37,17 @@ export default function GuestSettlement() {
 
   const paymentNote = `Dinner (${selectedItems.length} items) - Cheq`;
 
+  // Dynamic Link Generators (Using Store Data)
   const generateVenmoLink = () => {
-    const cleanHandle = hostHandle.replace('@', '');
-    const recipientParam = cleanHandle ? `&recipients=${cleanHandle}` : '';
+    const handle = hostVenmo?.replace('@', '') || '';
+    const recipientParam = handle ? `&recipients=${handle}` : '';
     return `venmo://paycharge?txn=pay&amount=${total.toFixed(2)}${recipientParam}&note=${encodeURIComponent(paymentNote)}`;
   };
 
   const generateCashAppLink = () => {
-    const cleanHandle = hostHandle.replace('$', '');
-    if (!cleanHandle) return `https://cash.app/`;
-    return `https://cash.app/$${cleanHandle}/${total.toFixed(2)}`;
+    const handle = hostCashApp?.replace('$', '') || '';
+    if (!handle) return `https://cash.app/`;
+    return `https://cash.app/$${handle}/${total.toFixed(2)}`;
   };
 
   const handleCopy = () => {
@@ -48,7 +64,7 @@ export default function GuestSettlement() {
           
           <header className="p-6 flex items-center gap-4">
             <button 
-              onClick={() => navigate('/split')} 
+              onClick={() => navigate(-1)} 
               className="p-2 -ml-2 text-gray-400 hover:text-white hover:bg-white/5 rounded-full transition-colors"
             >
               <ArrowLeft size={24} />
@@ -58,7 +74,7 @@ export default function GuestSettlement() {
 
           <main className="flex-1 p-6 pb-32 overflow-y-auto">
             
-            {/* RECEIPT CARD */}
+            {/* Final Receipt with Info */}
             <div className="bg-surface rounded-cheq p-6 mb-8 relative overflow-hidden shadow-lg">
               <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-50" />
               
@@ -87,30 +103,39 @@ export default function GuestSettlement() {
 
             {/* PAYMENT ACTIONS */}
             <div className="space-y-3">
-              <div className="mb-4">
-                <label className="text-xs font-bold text-gray-500 uppercase tracking-widest ml-1 mb-2 block">
-                  Pay To (Username)
-                </label>
-                <input 
-                  type="text" 
-                  placeholder="e.g. @jaypark"
-                  value={hostHandle}
-                  onChange={(e) => setHostHandle(e.target.value)}
-                  className="w-full bg-background border border-surface rounded-cheq p-3 text-white placeholder:text-gray-600 focus:border-brand focus:outline-none transition-colors"
-                />
-              </div>
+              <label className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-1 block">
+                Select Payment Method
+              </label>
 
               <div className="grid grid-cols-2 gap-3">
-                <a href={generateVenmoLink()} className="col-span-2 py-4 bg-[#008CFF] hover:bg-[#0074D4] text-white font-bold rounded-cheq flex items-center justify-center gap-2 transition-all active:scale-[0.98]">
-                  <VenmoIcon /> Venmo
-                </a>
-                <a href={generateCashAppLink()} className="col-span-1 py-4 bg-[#00D632] hover:bg-[#00B82B] text-white font-bold rounded-cheq flex items-center justify-center gap-2 transition-all active:scale-[0.98]">
-                  <Banknote size={20} /> Cash App
-                </a>
-                <button onClick={handleCopy} className="col-span-1 py-4 bg-[#6D1ED4] hover:bg-[#5815B0] text-white font-bold rounded-cheq flex items-center justify-center gap-2 transition-all active:scale-[0.98]">
-                  <Building2 size={20} /> Zelle
+                
+                {/* VENMO */}
+                {hostVenmo && (
+                  <a href={generateVenmoLink()} className="col-span-2 py-4 bg-[#008CFF] hover:bg-[#0074D4] text-white font-bold rounded-cheq flex items-center justify-center gap-2 transition-all active:scale-[0.98]">
+                    <VenmoIcon /> Pay {hostVenmo}
+                  </a>
+                )}
+
+                {/* CASHAPP */}
+                {hostCashApp && (
+                  <a href={generateCashAppLink()} className="col-span-2 py-4 bg-[#00D632] hover:bg-[#00B82B] text-white font-bold rounded-cheq flex items-center justify-center gap-2 transition-all active:scale-[0.98]">
+                    <Banknote size={20} /> Pay {hostCashApp}
+                  </a>
+                )}
+
+                {/* ZELLE / MANUAL COPY */}
+                <button onClick={handleCopy} className="col-span-2 py-4 bg-surface hover:bg-surface/80 text-white font-bold rounded-cheq flex items-center justify-center gap-2 transition-all active:scale-[0.98]">
+                   {copied ? <CheckCircle2 size={18} className="text-brand" /> : <Copy size={18} />}
+                   {copied ? "Copied!" : "Copy Amount & Details"}
                 </button>
               </div>
+
+              {/* Zelle Hint */}
+              {hostZelle && (
+                <p className="text-center text-xs text-gray-500 mt-4">
+                  Host's Zelle: <span className="text-white font-mono select-all">{hostZelle}</span>
+                </p>
+              )}
             </div>
 
           </main>

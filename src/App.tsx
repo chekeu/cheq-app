@@ -3,11 +3,10 @@ import { AnimatePresence } from 'framer-motion';
 import Home from './pages/Home';
 import ManualEntry from './pages/ManualEntry';
 import Split from './pages/Split';
-import Settlement from './pages/GuestSettlement';
 import HostDashboard from './pages/HostDashboard';
-import GuestSettlement from './pages/GuestSettlement';
+import GuestSplit from './pages/GuestSplit';      // Make sure this is imported
+import GuestSettlement from './pages/GuestSettlement'; // Make sure this is imported
 
-// We need a separate component for the Routes so we can use the 'useLocation' hook
 const AnimatedRoutes = () => {
   const location = useLocation();
 
@@ -17,8 +16,9 @@ const AnimatedRoutes = () => {
         <Route path="/" element={<Home />} />
         <Route path="/manual" element={<ManualEntry />} />
         <Route path="/split" element={<Split />} />
-        <Route path="/host-dashboard" element={<HostDashboard />} />
-        <Route path="/pay" element={<GuestSettlement />} />
+        <Route path="/host/:id" element={<HostDashboard />} />
+        <Route path="/bill/:id" element={<GuestSplit />} />       
+        <Route path="/pay/:id" element={<GuestSettlement />} /> 
       </Routes>
     </AnimatePresence>
   );

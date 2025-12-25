@@ -14,7 +14,6 @@ export default function Home() {
       
       <div className="w-full max-w-md min-h-screen bg-background flex flex-col relative shadow-2xl md:border-x md:border-surface">
         
-        {/* HEADER */}
         <nav className="p-6 flex justify-between items-center z-10">
           <span className="text-2xl font-bold tracking-tighter text-brand">CHEQ</span>
           <div className="px-3 py-1 rounded-full border border-white/10 bg-surface/50 backdrop-blur-md">
@@ -22,7 +21,6 @@ export default function Home() {
           </div>
         </nav>
 
-        {/* 2. HERO SECTION */}
         <main className="flex-1 flex flex-col justify-center px-6 pb-24 relative">
           
           {/* Ambient Glow */}

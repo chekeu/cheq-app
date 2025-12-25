@@ -18,3 +18,4 @@ export const PageTransition = ({ children }: PageTransitionProps) => {
     </motion.div>
   );
 };
+

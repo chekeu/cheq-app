@@ -33,8 +33,6 @@ export default function ManualEntry() {
     <PageTransition>
       <div className="min-h-screen bg-background text-foreground font-sans flex flex-col items-center">
         <div className="w-full max-w-md min-h-screen bg-background flex flex-col relative md:border-x md:border-surface">
-          
-          {/* HEADER */}
           <header className="p-6 flex items-center justify-between border-b border-surface/50">
             <div className="flex items-center gap-4">
               <button onClick={() => navigate(-1)} className="p-2 -ml-2 text-gray-400 hover:text-white rounded-full">
@@ -108,7 +106,6 @@ export default function ManualEntry() {
             )}
           </main>
 
-          {/* FOOTER */}
           <div className="absolute bottom-0 left-0 right-0 p-6 bg-background border-t border-surface shadow-[0_-10px_40px_rgba(0,0,0,0.5)] z-20">
             <div className="flex justify-between items-end mb-4">
               <span className="text-gray-400 text-sm font-medium">Subtotal</span>
