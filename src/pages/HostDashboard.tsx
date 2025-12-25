@@ -44,18 +44,31 @@ export default function HostDashboard() {
     : 100;
 
   // 3. SHARE
-  const handleShare = () => {
+ const handleShare = () => {
     const baseUrl = window.location.origin;
-    const guestLink = `${baseUrl}/bill/${id}`;
+    const guestLink = `${baseUrl}/#/bill/${id}`; // Ensure hash routing is handled if using Github Pages
     
+    // LOGIC: Get Host Name for the text
+    let hostName = localStorage.getItem('cheq_host_name');
+    if (!hostName) {
+      // If we don't know who you are, ask once and save it forever.
+      hostName = prompt("What is your name? (Will appear in the invite text)");
+      if (hostName) localStorage.setItem('cheq_host_name', hostName);
+    }
+    const nameToDisplay = hostName || "A friend"; // Fallback if they cancel prompt
+
+    const shareText = `Hello! ${nameToDisplay} has invited you to their cheq. The total is $${billTotal.toFixed(2)}, tap the link to pay your share!`;
+
     if (navigator.share) {
       navigator.share({
         title: 'Split the bill',
-        text: `Total is $${billTotal.toFixed(2)}. Tap to pay your share.`,
+        text: shareText,
         url: guestLink,
       }).catch(console.error);
     } else {
-      navigator.clipboard.writeText(guestLink);
+      // If copying to clipboard, we copy the text AND the link
+      const clipboardText = `${shareText} ${guestLink}`;
+      navigator.clipboard.writeText(clipboardText);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     }

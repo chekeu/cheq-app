@@ -35,7 +35,8 @@ export default function GuestSettlement() {
   const tipAmount = subtotal * tipRate;
   const total = subtotal + taxAmount + tipAmount;
 
-  const paymentNote = `Dinner (${selectedItems.length} items) - Cheq`;
+  // Message that will be put on the Venmo message
+  const paymentNote = `Cheq - (${selectedItems.length} items)`;
 
   // Dynamic Link Generators (Using Store Data)
   const generateVenmoLink = () => {

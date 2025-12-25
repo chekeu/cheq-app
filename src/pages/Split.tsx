@@ -67,7 +67,7 @@ export default function Split() {
       <div className="min-h-screen bg-background text-foreground font-sans flex flex-col items-center">
         <div className="w-full max-w-md min-h-screen bg-background flex flex-col relative md:border-x md:border-surface">
           
-          <header className="p-6 flex items-center justify-between sticky top-0 bg-background/80 backdrop-blur-md z-10 border-b border-surface/50">
+          <header className="p-6 flex items-center justify-between sticky top-0 bg-background/80 backdrop-blur-md z-50 border-b border-surface/50">
              <div className="flex items-center gap-4">
                <button onClick={() => navigate(-1)} className="p-2 -ml-2 text-gray-400 hover:text-white rounded-full">
                  <ArrowLeft size={24} />
