@@ -33,6 +33,8 @@ serve(async (req) => {
     
     formData.append('document', blob, 'receipt.jpg');
 
+    console.log(`Token ${Deno.env.get('MINDEE_API_KEY')}`)
+    
     // 2. Call Mindee API (Expense Receipts v5)
     const response = await fetch('https://api.mindee.net/v1/products/mindee/expense_receipts/v5/predict', {
       method: 'POST',
