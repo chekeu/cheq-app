@@ -57,11 +57,9 @@ export default function Home() {
         {/* DESKTOP WRAPPER (Visual only) */}
         <div className="fixed inset-0 bg-neutral-900 -z-10 hidden md:block" />
         
-        {/* --- INVISIBLE INPUT --- */}
         <input 
           type="file" 
           accept="image/*" 
-          capture="environment" // Forces rear camera on mobile
           ref={fileInputRef}
           className="hidden"
           onChange={handleFileChange}
