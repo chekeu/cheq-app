@@ -158,7 +158,7 @@ export default function ManualEntry() {
                       {[0.18, 0.20, 0.25].map(r => (
                         <button 
                           key={r}
-                          onClick={() => { setTip(r); setMetadata({ tip: null }); }} // Reset OCR override if % clicked
+                          onClick={() => { setTip(r); setMetadata({ tip: undefined }); }} // Reset OCR override if % clicked
                           className={`text-[10px] px-1.5 rounded transition-colors ${Math.abs(tipRate - r) < 0.01 && ocrTip === null ? 'bg-brand text-background' : 'bg-white/10 text-gray-400'}`}
                         >
                           {r*100}%
