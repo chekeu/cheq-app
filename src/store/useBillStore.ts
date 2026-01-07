@@ -61,7 +61,7 @@ export const useBillStore = create<BillState>((set, get) => ({
   })),
 
   clearBill: () => set({ items: [], storeName: "", billDate: "", ocrTax: null, ocrTip: null }),
-  
+
    subscribeToBill: (billId: string) => {
     // Cleanup existing channel if any
     const currentChannel = get().realtimeChannel;
@@ -147,7 +147,6 @@ export const useBillStore = create<BillState>((set, get) => ({
 
   setTax: (rate) => set({ taxRate: rate }),
   setTip: (rate) => set({ tipRate: rate }),
-  clearBill: () => set({ items: [] }),
 
   saveBillToCloud: async (paymentInfo) => {
     const state = get();

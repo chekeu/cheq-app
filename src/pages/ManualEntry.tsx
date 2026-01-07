@@ -1,5 +1,5 @@
-import { useState, useRef, useEffect } from 'react';
-import { ArrowLeft, Plus, Trash2, ArrowRight, Store, Calendar, DollarSign } from 'lucide-react';
+import { useState  } from 'react';
+import { ArrowLeft, Plus, Trash2, ArrowRight, Store, Calendar } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { PageTransition } from '../components/PageTransition';
 import { useBillStore } from '../store/useBillStore';
