@@ -213,20 +213,41 @@ export default function ManualEntry() {
 
                 {/* Tip Input */}
                 <div className="flex justify-between items-center">
-                  <label className="text-brand flex items-center gap-2">
-                    Tip
-                    <div className="flex gap-1">
+                  <div className="flex flex-col gap-1">
+                    <label className="text-brand text-xs font-bold uppercase tracking-wider">Tip</label>
+                    <div className="flex gap-1 items-center">
+                      {/* Presets */}
                       {[0.18, 0.20, 0.25].map(r => (
                         <button 
                           key={r}
                           onClick={() => { setTip(r); setMetadata({ tip: undefined }); }}
-                          className={`text-[10px] px-1.5 rounded transition-colors ${Math.abs(tipRate - r) < 0.01 && ocrTip === null ? 'bg-brand text-background' : 'bg-white/10 text-gray-400'}`}
+                          className={`text-[10px] px-1.5 py-0.5 rounded transition-colors ${Math.abs(tipRate - r) < 0.01 && ocrTip === null ? 'bg-brand text-background' : 'bg-white/10 text-gray-400 hover:bg-white/20'}`}
                         >
                           {r*100}%
                         </button>
                       ))}
+                      
+                      {/* Custom % Input */}
+                      <div className="relative w-8 ml-1">
+                        <input
+                          type="number"
+                          placeholder="%"
+                          // Only show custom value if it doesn't match a preset
+                          value={([0.18, 0.20, 0.25].some(r => Math.abs(tipRate - r) < 0.01) || ocrTip !== null) ? "" : (tipRate * 100).toFixed(0)}
+                          onChange={(e) => {
+                            const val = parseFloat(e.target.value);
+                            if (!isNaN(val)) {
+                              setTip(val / 100);
+                              setMetadata({ tip: undefined }); // Clear fixed dollar override
+                            }
+                          }}
+                          className="w-full bg-transparent border-b border-white/10 text-[10px] text-center text-brand focus:border-brand focus:outline-none placeholder:text-gray-600"
+                        />
+                      </div>
                     </div>
-                  </label>
+                  </div>
+
+                  {/* Dollar Amount Input */}
                   <div className="flex items-center gap-1 border-b border-white/10 focus-within:border-brand w-20">
                     <span className="text-gray-500">$</span>
                     <input 
