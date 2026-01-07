@@ -18,7 +18,7 @@ export default function Home() {
     fileInputRef.current?.click();
   };
 
-  // 2. FILE HANDLER (Where the magic happens)
+  // 2. FILE HANDLER 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -29,13 +29,19 @@ export default function Home() {
       // Clear previous bill data so we don't append to old stuff
       clearBill();
 
-      // Call our Service (Compress -> Upload -> Edge Function -> OCR)
-      const scannedItems = await billService.scanReceipt(file);
+      const result = await billService.scanReceipt(file);
 
-      // Populate Global Store
-      scannedItems.forEach(item => {
-        addItem(item.name, item.price);
-      });
+      // Save Individual Items
+      result.items.forEach(item => addItem(item.name, item.price));
+
+      // 2. Save Metadata 
+      if (result.meta) {
+        useBillStore.getState().setMetadata({
+          store: result.meta.store,
+          date: result.meta.date,
+          tax: result.meta.tax,
+          tip: result.meta.tip
+        })}
 
       // Go to Review Screen (Manual Entry Page)
       navigate('/manual'); 

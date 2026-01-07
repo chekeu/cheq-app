@@ -11,9 +11,19 @@ export interface BillData {
   hostZelle?: string;
 }
 
+interface ScanResult {
+  items: { name: string; price: number }[];
+  meta?: {
+    store: string;
+    date: string;
+    tax: number;
+    tip: number;
+  };
+}
+
 export const billService = {
   
-  async scanReceipt(file: File): Promise<{ name: string; price: number }[]> {
+ async scanReceipt(file: File): Promise<ScanResult> {
     
     // A. Compress/Base64
     const toBase64 = (file: File) => new Promise<string>((resolve, reject) => {
@@ -38,7 +48,10 @@ export const billService = {
     if (!response.ok) throw new Error('Scanning failed');
 
     const data = await response.json();
-    return data.items || [];
+      return {
+      items: data.items || [],
+      meta: data.metadata
+    };
   },
 
   // CREATE BILL
