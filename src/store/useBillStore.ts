@@ -19,7 +19,12 @@ interface BillState {
   hostVenmo: string | null;
   hostCashApp: string | null;
   hostZelle: string | null;
+  storeName: string;
+  billDate: string;
+  ocrTax: number | null;
+  ocrTip: number | null;
   realtimeChannel: RealtimeChannel | null; 
+  setMetadata: (data: { store?: string; date?: string; tax?: number; tip?: number }) => void;
   addItem: (name: string, price: number) => void;
   removeItem: (id: string) => void;
   toggleItem: (id: string) => void;
@@ -35,6 +40,10 @@ interface BillState {
 
 export const useBillStore = create<BillState>((set, get) => ({
   realtimeChannel: null, // Default null
+  storeName: "",
+  billDate: "",
+  ocrTax: null,
+  ocrTip: null,
   items: [],
   taxRate: 0.08,
   tipRate: 0.20,
@@ -43,6 +52,16 @@ export const useBillStore = create<BillState>((set, get) => ({
   hostCashApp: null,
   hostZelle: null,
 
+  setMetadata: (data) => set((state) => ({
+    storeName: data.store ?? state.storeName,
+    billDate: data.date ?? state.billDate,
+    // If OCR found a dollar amount, save it. We might calculate rate later.
+    ocrTax: data.tax ?? state.ocrTax,
+    ocrTip: data.tip ?? state.ocrTip,
+  })),
+
+  clearBill: () => set({ items: [], storeName: "", billDate: "", ocrTax: null, ocrTip: null }),
+  
    subscribeToBill: (billId: string) => {
     // Cleanup existing channel if any
     const currentChannel = get().realtimeChannel;
