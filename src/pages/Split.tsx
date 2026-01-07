@@ -1,32 +1,39 @@
 import { useState, useEffect, useRef } from 'react';
-import { ArrowLeft, Check, CheckCircle, Wallet, X } from 'lucide-react';
+import { ArrowLeft, Check, CheckCircle, Wallet, X, ChevronUp, ChevronDown } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { PageTransition } from '../components/PageTransition';
 import { useBillStore } from '../store/useBillStore';
 
 export default function Split() {
   const navigate = useNavigate();
-  const { items, toggleItem, saveBillToCloud } = useBillStore(); 
+  const mainRef = useRef<HTMLDivElement>(null);
+  
+  // Destructure store values
+  const { 
+    items, toggleItem, saveBillToCloud,
+    taxRate, tipRate
+  } = useBillStore(); 
   
   const [isSaving, setIsSaving] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   
-  // Local state for handles
+  // Toggle for the "Edit Math" drawer
+  const [showMath, setShowMath] = useState(false);
+
+  // Local state for Payment Handles
   const [venmo, setVenmo] = useState('');
   const [cashapp, setCashapp] = useState('');
   const [zelle, setZelle] = useState('');
 
-  const mainRef = useRef<HTMLDivElement>(null); // NEW
+  // Local state for Host's Personal Math Overrides
+  // null = use auto-calculated default. string = manual override.
+  const [manualTax, setManualTax] = useState<string | null>(null);
+  const [manualTip, setManualTip] = useState<string | null>(null);
 
-  // Force scroll to top on mount
+  // 1. Load saved handles & Reset Scroll
   useEffect(() => {
-    if (mainRef.current) {
-      mainRef.current.scrollTop = 0;
-    }
-  }, []);
-
-  // 1. Load saved handles
-  useEffect(() => {
+    if (mainRef.current) mainRef.current.scrollTop = 0;
+    
     const savedVenmo = localStorage.getItem('cheq_venmo');
     const savedCash = localStorage.getItem('cheq_cashapp');
     const savedZelle = localStorage.getItem('cheq_zelle');
@@ -36,13 +43,24 @@ export default function Split() {
     if (savedZelle) setZelle(savedZelle);
   }, []);
 
-  // Math
-  const myTotal = items.filter(i => i.isSelected).reduce((sum, item) => sum + item.price, 0);
-  const selectedCount = items.filter(i => i.isSelected).length;
+  // 2. MATH LOGIC
+  const myItems = items.filter(i => i.isSelected);
+  const mySubtotal = myItems.reduce((sum, item) => sum + item.price, 0);
+  const selectedCount = myItems.length;
+  
+  // Defaults based on global rate
+  const defaultTax = mySubtotal * taxRate;
+  const defaultTip = mySubtotal * tipRate;
 
-  // 2. The Trigger
+  // Final values (Override if set)
+  const finalTax = manualTax !== null ? parseFloat(manualTax) || 0 : defaultTax;
+  const finalTip = manualTip !== null ? parseFloat(manualTip) || 0 : defaultTip;
+  
+  const myTotal = mySubtotal + finalTax + finalTip;
+
+  // 3. ACTIONS
   const handleConfirmClick = () => {
-    // If we have at least one payment method, execute. Else show modal.
+    // If user has at least one payment method, proceed. Else prompt.
     if (venmo || cashapp || zelle) {
       executeSave();
     } else {
@@ -54,38 +72,46 @@ export default function Split() {
     try {
       setIsSaving(true);
       
-      // Update LocalStorage
+      // Persist handles
       if (venmo) localStorage.setItem('cheq_venmo', venmo);
       if (cashapp) localStorage.setItem('cheq_cashapp', cashapp);
       if (zelle) localStorage.setItem('cheq_zelle', zelle);
 
       // Save to Cloud
+      // Note: We currently don't save the Host's specific tax/tip *override* to the DB 
+      // (the DB tracks items + global rates). Ideally, the Host's "Claim" would include these deltas.
+      // For MVP, this calculation is primarily for the Host's own "What do I owe?" check.
       const billId = await saveBillToCloud({ venmo, cashapp, zelle });
       
       navigate(`/host/${billId}`);
       
     } catch (error) {
-      console.error("Failed to save:", error);
-      alert("Error saving bill.");
+      console.error("Save failed:", error);
+      alert("Error saving bill. Please try again.");
       setIsSaving(false);
     }
   };
 
   return (
     <PageTransition>
-      <div className="min-h-screen bg-background text-foreground font-sans flex flex-col items-center">
-        <div className="w-full max-w-md min-h-screen bg-background flex flex-col relative md:border-x md:border-surface">
+      <div className="h-screen w-full bg-background text-foreground font-sans flex flex-col items-center overflow-hidden">
+        <div className="w-full max-w-md h-full bg-background flex flex-col relative md:border-x md:border-surface shadow-2xl">
           
-          <header className="p-6 flex items-center justify-between sticky top-0 bg-background/80 backdrop-blur-md z-50 border-b border-surface/50">
+          {/* HEADER */}
+          <header className="shrink-0 p-6 flex items-center justify-between border-b border-surface/50 bg-background z-50">
              <div className="flex items-center gap-4">
                <button onClick={() => navigate(-1)} className="p-2 -ml-2 text-gray-400 hover:text-white rounded-full">
                  <ArrowLeft size={24} />
                </button>
-               <h1 className="text-xl font-bold tracking-tight">Select Items</h1>
+               <div>
+                 <h1 className="text-xl font-bold tracking-tight">Select Yours</h1>
+                 <p className="text-xs text-gray-500">Tap items you are paying for</p>
+               </div>
              </div>
           </header>
 
-          <main ref={mainRef} className="flex-1 p-4 pb-48 overflow-y-auto">
+          {/* LIST */}
+          <main ref={mainRef} className="flex-1 overflow-y-auto p-4 pb-72 scrollbar-hide">
              <div className="space-y-2">
               {items.map((item) => (
                 <button
@@ -109,7 +135,8 @@ export default function Split() {
                     <span className={`font-mono text-lg font-bold ${item.isSelected ? 'text-background' : 'text-brand'}`}>
                       ${item.price.toFixed(2)}
                     </span>
-                    <div className={`w-6 h-6 rounded-full flex items-center justify-center border-2 ${item.isSelected ? 'bg-background border-background' : 'border-gray-600'}`}>
+                    <div className={`w-6 h-6 rounded-full flex items-center justify-center border-2 
+                      ${item.isSelected ? 'bg-background border-background' : 'border-gray-600'}`}>
                       {item.isSelected && <Check size={14} className="text-brand" strokeWidth={4} />}
                     </div>
                   </div>
@@ -118,53 +145,99 @@ export default function Split() {
             </div>
           </main>
 
-
           {/* FOOTER */}
-          <div className="fixed bottom-0 w-full max-w-md p-6 bg-background border-t border-surface shadow-[0_-10px_40px_rgba(0,0,0,0.5)] z-20">
+          <div className="absolute bottom-0 left-0 right-0 bg-background border-t border-surface shadow-[0_-10px_40px_rgba(0,0,0,0.5)] z-30 transition-all">
             
-            <div className="flex justify-between items-end mb-4 px-1">
-              <div className="flex flex-col">
-                <span className="text-gray-400 text-sm font-medium mb-1">Your Share</span>
-                <span className="text-4xl font-mono font-bold text-brand tracking-tighter">
-                  ${myTotal.toFixed(2)}
-                </span>
-              </div>
-              <div className="text-right pb-1">
-                <span className="text-xs font-mono text-gray-500">{selectedCount} items</span>
-              </div>
-            </div>
-
-            {/* Payment Destination Preview */}
-            {(venmo || cashapp || zelle) && (
-              <div className="mb-4 flex items-center justify-between bg-surface/50 p-3 rounded-cheq border border-white/5">
-                <div className="flex items-center gap-2 overflow-hidden">
-                  <div className="p-1.5 bg-brand/10 rounded-full">
-                    <Wallet size={14} className="text-brand" />
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Pay To</span>
-                    <span className="text-xs text-white truncate max-w-[150px]">
-                      {venmo || cashapp || zelle}
-                    </span>
-                  </div>
+            {/* EXPANDABLE MATH DRAWER */}
+            {showMath && (
+              <div className="p-4 bg-surface/50 border-b border-white/5 space-y-3 animate-in slide-in-from-bottom-5">
+                
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-gray-400">Subtotal</span>
+                  <span className="text-white font-mono">${mySubtotal.toFixed(2)}</span>
                 </div>
-                <button 
-                  onClick={() => setShowPaymentModal(true)}
-                  className="text-xs font-bold text-brand hover:text-white underline decoration-brand/30 underline-offset-4 transition-colors"
-                >
-                  Change
-                </button>
+                
+                {/* Tax Override */}
+                <div className="flex justify-between items-center">
+                  <label className="text-xs font-bold text-gray-500 uppercase">My Tax</label>
+                  <input 
+                    type="number" 
+                    value={manualTax !== null ? manualTax : defaultTax.toFixed(2)}
+                    onChange={(e) => setManualTax(e.target.value)}
+                    className="w-20 bg-black/20 border border-white/10 rounded px-2 py-1 text-right text-white font-mono text-sm focus:border-brand focus:outline-none"
+                  />
+                </div>
+
+                {/* Tip Override */}
+                <div className="flex justify-between items-center">
+                  <label className="text-xs font-bold text-brand uppercase">My Tip</label>
+                  <input 
+                    type="number" 
+                    value={manualTip !== null ? manualTip : defaultTip.toFixed(2)}
+                    onChange={(e) => setManualTip(e.target.value)}
+                    className="w-20 bg-black/20 border border-white/10 rounded px-2 py-1 text-right text-brand font-mono text-sm focus:border-brand focus:outline-none"
+                  />
+                </div>
               </div>
             )}
-            
-            <button 
-              onClick={handleConfirmClick}
-              disabled={isSaving}
-              className="w-full py-4 bg-brand text-background text-lg font-bold rounded-cheq hover:bg-[#99E3D6] flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(128,216,200,0.3)] disabled:opacity-50 transition-all active:scale-[0.98]"
-            >
-              {isSaving ? "Creating..." : "Confirm & View Bill"}
-              <CheckCircle size={20} strokeWidth={3} />
-            </button>
+
+            {/* MAIN FOOTER CONTENT */}
+            <div className="p-6">
+              
+              {/* Summary Row */}
+              <div className="flex justify-between items-end mb-4 px-1">
+                
+                {/* Clickable Total Label */}
+                <div 
+                  onClick={() => setShowMath(!showMath)}
+                  className="flex flex-col cursor-pointer group select-none"
+                >
+                  <div className="flex items-center gap-2 text-gray-400 text-sm font-medium mb-1 group-hover:text-white transition-colors">
+                    Your Share 
+                    {showMath ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
+                  </div>
+                  <span className="text-4xl font-mono font-bold text-brand tracking-tighter">
+                    ${myTotal.toFixed(2)}
+                  </span>
+                </div>
+
+                <div className="text-right pb-1">
+                  <span className="text-xs font-mono text-gray-500">{selectedCount} items</span>
+                </div>
+              </div>
+
+              {/* Payment Info Preview */}
+              {(venmo || cashapp || zelle) && (
+                <div className="mb-4 flex items-center justify-between bg-surface/50 p-3 rounded-cheq border border-white/5">
+                  <div className="flex items-center gap-2 overflow-hidden">
+                    <div className="p-1.5 bg-brand/10 rounded-full">
+                      <Wallet size={14} className="text-brand" />
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Receiving On</span>
+                      <span className="text-xs text-white truncate max-w-[150px]">
+                        {venmo || cashapp || zelle}
+                      </span>
+                    </div>
+                  </div>
+                  <button 
+                    onClick={() => setShowPaymentModal(true)}
+                    className="text-xs font-bold text-brand hover:text-white underline decoration-brand/30 underline-offset-4 transition-colors"
+                  >
+                    Change
+                  </button>
+                </div>
+              )}
+              
+              <button 
+                onClick={handleConfirmClick}
+                disabled={isSaving}
+                className="w-full py-4 bg-brand text-background text-lg font-bold rounded-cheq hover:bg-[#99E3D6] flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(128,216,200,0.3)] disabled:opacity-50 transition-all active:scale-[0.98]"
+              >
+                {isSaving ? "Creating..." : "Confirm & Create Bill"}
+                <CheckCircle size={20} strokeWidth={3} />
+              </button>
+            </div>
           </div>
 
           {/* PAYMENT SETUP MODAL */}
