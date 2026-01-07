@@ -1,5 +1,5 @@
-import { useState  } from 'react';
-import { ArrowLeft, Plus, Trash2, ArrowRight, Store, Calendar } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
+import { ArrowLeft, Plus, Trash2, ArrowRight, Store, Calendar, DollarSign, X, Check } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { PageTransition } from '../components/PageTransition';
 import { useBillStore } from '../store/useBillStore';
@@ -14,19 +14,41 @@ export default function ManualEntry() {
   
   const [name, setName] = useState('');
   const [price, setPrice] = useState('');
+  const [editingId, setEditingId] = useState<string | null>(null);
 
-  // Local state for bottom sheet inputs (default to OCR values or calculated)
+  // --- MATH LOGIC ---
   const subtotal = items.reduce((sum, item) => sum + item.price, 0);
-  
-  // If we have specific OCR dollar amounts, use them. Otherwise use rate * subtotal
   const currentTax = ocrTax !== null ? ocrTax : (subtotal * taxRate);
   const currentTip = ocrTip !== null ? ocrTip : (subtotal * tipRate);
   const total = subtotal + currentTax + currentTip;
 
-  const handleAdd = (e?: React.FormEvent) => {
+  // --- ACTIONS ---
+  const handleAddOrUpdate = (e?: React.FormEvent) => {
     e?.preventDefault(); 
     if (!name || !price) return;
-    addItem(name, parseFloat(price));
+
+    if (editingId) {
+      // UPDATE: Delete old, add new (Simple implementation)
+      // In a real app, use an 'updateItem' action in store to preserve order
+      removeItem(editingId);
+      addItem(name, parseFloat(price));
+      setEditingId(null);
+    } else {
+      // CREATE
+      addItem(name, parseFloat(price));
+    }
+    setName('');
+    setPrice('');
+  };
+
+  const startEditing = (item: any) => {
+    setEditingId(item.id);
+    setName(item.name);
+    setPrice(item.price.toString());
+  };
+
+  const cancelEditing = () => {
+    setEditingId(null);
     setName('');
     setPrice('');
   };
@@ -74,44 +96,84 @@ export default function ManualEntry() {
             </div>
           </header>
 
-          {/* 2. QUICK ADD FORM */}
-          <div className="shrink-0 p-4 bg-background z-10 border-b border-white/5">
-            <form onSubmit={handleAdd} className="flex gap-3">
+          {/* 2. INPUT FORM */}
+          <div className={`shrink-0 p-4 z-10 border-b border-white/5 transition-colors ${editingId ? 'bg-brand/10' : 'bg-background'}`}>
+            <form onSubmit={handleAddOrUpdate} className="flex gap-3">
               <input
                 type="text"
-                placeholder="Add item..."
+                placeholder={editingId ? "Edit Name" : "Add item..."}
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="flex-1 bg-surface rounded-cheq px-4 py-3 text-sm focus:outline-none focus:ring-1 focus:ring-brand"
+                className="flex-1 bg-surface rounded-cheq px-4 py-3 text-sm focus:outline-none focus:ring-1 focus:ring-brand text-white placeholder:text-gray-500"
               />
               <input
                 type="number"
                 placeholder="0.00"
                 value={price}
                 onChange={(e) => setPrice(e.target.value)}
-                className="w-20 bg-surface rounded-cheq px-4 py-3 text-sm focus:outline-none focus:ring-1 focus:ring-brand text-right"
+                className="w-20 bg-surface rounded-cheq px-4 py-3 text-sm focus:outline-none focus:ring-1 focus:ring-brand text-right text-white font-mono placeholder:text-gray-500"
               />
-              <button type="submit" disabled={!name || !price} className="bg-surface border border-white/10 p-3 rounded-cheq text-brand hover:bg-white/5">
-                <Plus size={20} />
-              </button>
+              
+              {/* Dynamic Action Buttons */}
+              {editingId ? (
+                <div className="flex gap-1">
+                  <button type="button" onClick={cancelEditing} className="bg-surface p-3 rounded-cheq text-red-400 hover:bg-white/10">
+                    <X size={20} />
+                  </button>
+                  <button type="submit" className="bg-brand text-background p-3 rounded-cheq hover:bg-brand/90">
+                    <Check size={20} />
+                  </button>
+                </div>
+              ) : (
+                <button type="submit" disabled={!name || !price} className="bg-surface border border-white/10 p-3 rounded-cheq text-brand hover:bg-white/5 disabled:opacity-50">
+                  <Plus size={20} />
+                </button>
+              )}
             </form>
           </div>
 
-          {/* 3. SCROLLABLE LIST */}
+          {/* 3. ITEM LIST */}
           <main className="flex-1 overflow-y-auto p-4 pb-64 scrollbar-hide">
-            <div className="space-y-1">
-              {[...items].reverse().map((item) => (
-                <div key={item.id} className="flex justify-between items-center p-3 bg-surface/20 rounded-cheq group">
-                  <span className="font-medium text-white/90">{item.name}</span>
-                  <div className="flex items-center gap-3">
-                    <span className="font-mono text-brand">${item.price.toFixed(2)}</span>
-                    <button onClick={() => removeItem(item.id)} className="text-gray-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Trash2 size={14} />
+            {items.length === 0 ? (
+              <div className="text-center mt-10 opacity-30">
+                <p className="text-4xl mb-2">🧾</p>
+                <p className="text-sm">No items yet.</p>
+              </div>
+            ) : (
+              <div className="space-y-1">
+                {[...items].reverse().map((item) => (
+                  <div 
+                    key={item.id} 
+                    className={`flex justify-between items-center p-3 rounded-cheq transition-all ${
+                      editingId === item.id 
+                        ? 'bg-brand/20 border border-brand/50' 
+                        : 'bg-surface/20 border border-transparent'
+                    }`}
+                  >
+                    {/* Item Content (Click to Edit) */}
+                    <div 
+                      onClick={() => startEditing(item)}
+                      className="flex-1 flex justify-between items-center cursor-pointer mr-4"
+                    >
+                      <span className="font-medium text-white/90 truncate mr-2">{item.name}</span>
+                      <span className="font-mono text-brand">${item.price.toFixed(2)}</span>
+                    </div>
+
+                    {/* Delete Button */}
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (editingId === item.id) cancelEditing();
+                        removeItem(item.id);
+                      }} 
+                      className="p-2 -mr-2 text-gray-500 hover:text-red-400 hover:bg-white/5 rounded-full transition-colors"
+                    >
+                      <Trash2 size={18} />
                     </button>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </main>
 
           {/* 4. FOOTER (Totals & Rules) */}
@@ -125,7 +187,7 @@ export default function ManualEntry() {
                   <span className="font-mono">${subtotal.toFixed(2)}</span>
                 </div>
                 
-                {/* Tax Input Row */}
+                {/* Tax Input */}
                 <div className="flex justify-between items-center">
                   <label className="text-gray-400 flex items-center gap-2">
                     Tax 
@@ -137,12 +199,11 @@ export default function ManualEntry() {
                     <span className="text-gray-500">$</span>
                     <input 
                       type="number" 
-                      value={currentTax.toFixed(2)}
+                      value={currentTax > 0 ? currentTax.toFixed(2) : ""}
+                      placeholder="0.00"
                       onChange={(e) => {
-                        // Logic: If user types dollar amount, update store. 
-                        // For MVP simple logic: Update rate based on input
                         const val = parseFloat(e.target.value) || 0;
-                        setMetadata({ tax: val }); // Override OCR tax
+                        setMetadata({ tax: val }); 
                         if (subtotal > 0) setTax(val / subtotal);
                       }}
                       className="w-full bg-transparent text-right font-mono text-white focus:outline-none"
@@ -150,7 +211,7 @@ export default function ManualEntry() {
                   </div>
                 </div>
 
-                {/* Tip Input Row */}
+                {/* Tip Input */}
                 <div className="flex justify-between items-center">
                   <label className="text-brand flex items-center gap-2">
                     Tip
@@ -158,7 +219,7 @@ export default function ManualEntry() {
                       {[0.18, 0.20, 0.25].map(r => (
                         <button 
                           key={r}
-                          onClick={() => { setTip(r); setMetadata({ tip: undefined }); }} // Reset OCR override if % clicked
+                          onClick={() => { setTip(r); setMetadata({ tip: undefined }); }}
                           className={`text-[10px] px-1.5 rounded transition-colors ${Math.abs(tipRate - r) < 0.01 && ocrTip === null ? 'bg-brand text-background' : 'bg-white/10 text-gray-400'}`}
                         >
                           {r*100}%
@@ -170,7 +231,8 @@ export default function ManualEntry() {
                     <span className="text-gray-500">$</span>
                     <input 
                       type="number" 
-                      value={currentTip.toFixed(2)}
+                      value={currentTip > 0 ? currentTip.toFixed(2) : ""}
+                      placeholder="0.00"
                       onChange={(e) => {
                         const val = parseFloat(e.target.value) || 0;
                         setMetadata({ tip: val });
@@ -182,7 +244,7 @@ export default function ManualEntry() {
                 </div>
               </div>
 
-              {/* Final Total & Action */}
+              {/* Final Action */}
               <div className="pt-4 border-t border-white/10 flex justify-between items-end">
                 <div>
                   <span className="text-xs font-bold text-gray-500 uppercase tracking-widest">Total</span>
@@ -193,7 +255,7 @@ export default function ManualEntry() {
                 <button 
                   onClick={() => navigate('/split')} 
                   disabled={items.length === 0}
-                  className="bg-brand text-background px-6 py-3 rounded-cheq font-bold hover:bg-[#99E3D6] flex items-center gap-2 transition-all active:scale-95"
+                  className="bg-brand text-background px-6 py-3 rounded-cheq font-bold hover:bg-[#99E3D6] flex items-center gap-2 transition-all active:scale-95 disabled:opacity-50"
                 >
                   Next <ArrowRight size={18} />
                 </button>
