@@ -14,33 +14,32 @@ export interface BillData {
 
 export const billService = {
   
-    async scanReceipt(file: File): Promise<{ name: string; price: number }[]> {
-    try {
-      // A. Compress the image locally first (Critical for speed/limits)
-      const base64Image = await compressImage(file);
+  async scanReceipt(file: File): Promise<{ name: string; price: number }[]> {
+    
+    // A. Compress/Base64
+    const toBase64 = (file: File) => new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = error => reject(error);
+    });
 
-      // B. Call the deployed Supabase Function
-      // 'scan-receipt' must match the folder name in supabase/functions/
-      const { data, error } = await supabase.functions.invoke('scan-receipt', {
-        body: { image: base64Image },
-      });
+    const base64Image = await toBase64(file);
 
-      if (error) {
-        console.error('Edge Function Error:', error);
-        throw new Error('Failed to reach scanner');
-      }
+    // B. Call Your New Vercel Microservice
+    // REPLACE THIS URL with your new Vercel URL
+    const MICROSERVICE_URL = 'https://cheq-ocr.vercel.app/api'; 
+    
+    const response = await fetch(MICROSERVICE_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ image: base64Image }),
+    });
 
-      // C. Validate Response
-      if (!data || !data.items) {
-        throw new Error('No items found in receipt');
-      }
+    if (!response.ok) throw new Error('Scanning failed');
 
-      return data.items;
-
-    } catch (err) {
-      console.error(err);
-      throw err; // Re-throw to let UI handle the alert
-    }
+    const data = await response.json();
+    return data.items || [];
   },
 
   // CREATE BILL
