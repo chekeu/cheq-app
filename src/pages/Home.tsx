@@ -66,9 +66,8 @@ export default function Home() {
           onChange={handleFileChange}
         />
 
-        {/* LOADING OVERLAY */}
-        {isScanning && (
-          <div className="absolute inset-0 z-50 bg-background/90 backdrop-blur-md flex flex-col items-center justify-center animate-in fade-in duration-300">
+          {isScanning && (
+          <div className="fixed inset-0 z-50 bg-background/90 backdrop-blur-md flex flex-col items-center justify-center animate-in fade-in duration-300">
             <Loader2 size={48} className="text-brand animate-spin mb-4" />
             <h2 className="text-xl font-bold text-white">Analyzing Receipt...</h2>
           </div>
