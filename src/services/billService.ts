@@ -36,7 +36,6 @@ export const billService = {
     const base64Image = await toBase64(file);
 
     // B. Call Your New Vercel Microservice
-    // REPLACE THIS URL with your new Vercel URL
     const MICROSERVICE_URL = 'https://cheq-ocr.vercel.app/api'; 
     
     const response = await fetch(MICROSERVICE_URL, {
@@ -54,7 +53,6 @@ export const billService = {
     };
   },
 
-  // CREATE BILL
   async createBill(data: BillData) {
     // A. Insert Bill Header
     const { data: bill, error: billError } = await supabase
