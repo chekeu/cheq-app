@@ -249,7 +249,7 @@ export default function ManualEntry() {
                       {[0.18, 0.20, 0.25].map(r => (
                         <button 
                           key={r}
-                          onClick={() => { setTip(r); setMetadata({ tip: null }); }}
+                          onClick={() => { setTip(r); setMetadata({ tip: undefined }); }}
                           className={`text-[10px] px-1.5 py-0.5 rounded transition-colors ${Math.abs(tipRate - r) < 0.01 && ocrTip === null ? 'bg-brand text-background' : 'bg-white/10 text-gray-400 hover:bg-white/20'}`}
                         >
                           {r*100}%
@@ -264,7 +264,7 @@ export default function ManualEntry() {
                             const val = parseFloat(e.target.value);
                             if (!isNaN(val)) {
                               setTip(val / 100);
-                              setMetadata({ tip: null });
+                              setMetadata({ tip: undefined });
                             }
                           }}
                           className="w-full bg-transparent border-b border-white/10 text-[10px] text-center text-brand focus:border-brand focus:outline-none placeholder:text-gray-600"
