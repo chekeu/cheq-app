@@ -118,13 +118,16 @@ export const useBillStore = create<BillState>((set, get) => ({
     set({ isLoading: true });
     try {
       const { bill, items } = await billService.getBill(billId);
+      
       const uiItems: ReceiptItem[] = items.map((dbItem: any) => ({
         id: dbItem.id,
         name: dbItem.name,
         price: dbItem.price,
-        isSelected: dbItem.claimed_by === 'HOST', 
+        isSelected: false, 
+        
         claimedBy: dbItem.claimed_by
       }));
+
       set({
         items: uiItems,
         taxRate: bill.tax_rate,
