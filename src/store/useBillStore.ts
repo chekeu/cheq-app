@@ -96,8 +96,8 @@ export const useBillStore = create<BillState>((set, get) => ({
   setMetadata: (data) => set((state) => ({
     storeName: data.store ?? state.storeName,
     billDate: data.date ?? state.billDate,
-    ocrTax: data.tax ?? state.ocrTax,
-    ocrTip: data.tip ?? state.ocrTip,
+    ocrTax: data.tax !== undefined ? data.tax : state.ocrTax,
+    ocrTip: data.tip !== undefined ? data.tip : state.ocrTip,
   })),
   clearBill: () => set({ items: [], storeName: "", billDate: "", ocrTax: null, ocrTip: null }),
   

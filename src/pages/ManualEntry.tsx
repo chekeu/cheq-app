@@ -19,8 +19,15 @@ export default function ManualEntry() {
   const [itemToSplit, setItemToSplit] = useState<ReceiptItem | null>(null);
 
   const subtotal = items.reduce((sum, item) => sum + item.price, 0);
-  const currentTax = ocrTax !== null ? ocrTax : (subtotal * taxRate);
-  const currentTip = ocrTip !== null ? ocrTip : (subtotal * tipRate);
+  
+  const currentTax = (ocrTax !== null && ocrTax !== undefined) 
+    ? ocrTax 
+    : (subtotal * taxRate);
+
+  const currentTip = (ocrTip !== null && ocrTip !== undefined) 
+    ? ocrTip 
+    : (subtotal * tipRate);
+
   const total = subtotal + currentTax + currentTip;
 
   const handleAddOrUpdate = (e?: React.FormEvent) => {
